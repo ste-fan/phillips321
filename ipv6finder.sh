@@ -60,7 +60,7 @@ f_main(){
         if [ ! -z ${ShortMAC} ]; then
             IPV4Address=$(echo "${ArpScan}" | grep "${LongMAC}" | head -n1 | cut -f1)
             IPV6G=""
-            IPV6G=$(ip -6 neigh show | grep "${interface}.*${LongMAC}" | grep -v fe80 | awk {'print $1'} | head -n 1)
+            IPV6G=$(ip -6 neigh show | grep "${interface}.*${LongMAC}" | grep -vE '^f(e80|[cd])' | awk {'print $1'} | head -n 1)
             if [ -z ${IPV6G} ]; then
                 IPV6G="NotFound"
                 cat /sys/class/net/${interface}/address | grep -q ${LongMAC}
