@@ -29,7 +29,7 @@ f_main(){
 
     #Ping multicast address for global neighbours and store as GlobalNeighbours
     echo -n "[+]Pinging (ff02::1) multicast for nodes on Global Interface. "
-    IPV6Address=$(ip -6 addr | grep "inet6" | grep -v "::1" | grep -v "fe80"| grep -Ev "inet6\ f(c|d)" | grep -v "temporary" | awk {'print $2'} | cut -d"/" -f1)
+    IPV6Address=$(ip -6 addr show ${interface} | grep "inet6" | grep -v "::1" | grep -v "fe80"| grep -Ev "inet6\ f(c|d)" | grep -v "temporary" | awk {'print $2'} | cut -d"/" -f1)
     if [ ! -z ${IPV6Address} ]; then
         GlobalNeighbours=$(ping6 -c 3 -I ${IPV6Address} ff02::1 | grep icmp_seq | cut -d" " -f4 | cut -d"," -f 1 | sort -u | rev | cut -c 2- | rev)
         { for i in ${GlobalNeighbours} ; do ping6 -c 1 -I ${interface} $i ; done } &> /dev/null
@@ -51,8 +51,8 @@ f_main(){
         IPV6LL_WITH_INTERFACE="${IPV6LL}%${interface}"
 
         #Get LinkLocal MAC from NDP table
-        ShortMAC=$(ip -6 neigh show ${IPV6LL} | awk {'print $5'} | sed 's/0\([0-9A-Fa-f]\)/\1/g')
-        LongMAC=$(ip -6 neigh show ${IPV6LL} | awk {'print $5'})
+        ShortMAC=$(ip -6 neigh show ${IPV6LL} | grep ${interface} | awk {'print $5'} | sed 's/0\([0-9A-Fa-f]\)/\1/g')
+        LongMAC=$(ip -6 neigh show ${IPV6LL} | grep ${interface} | awk {'print $5'})
         if [ -z ${ShortMAC} ] ; then ShortMAC=$(cat /sys/class/net/${interface}/address | sed 's/0\([0-9A-Fa-f]\)/\1/g'); fi
         if [ -z ${LongMAC} ] ; then LongMAC=$(cat /sys/class/net/${interface}/address); fi
 
@@ -60,7 +60,7 @@ f_main(){
         if [ ! -z ${ShortMAC} ]; then
             IPV4Address=$(echo "${ArpScan}" | grep "${LongMAC}" | head -n1 | cut -f1)
             IPV6G=""
-            IPV6G=$(ip -6 neigh show | grep "${LongMAC}" | grep -v fe80 | awk {'print $1'} | head -n 1)
+            IPV6G=$(ip -6 neigh show | grep "${interface}.*${LongMAC}" | grep -v fe80 | awk {'print $1'} | head -n 1)
             if [ -z ${IPV6G} ]; then
                 IPV6G="NotFound"
                 cat /sys/class/net/${interface}/address | grep -q ${LongMAC}
